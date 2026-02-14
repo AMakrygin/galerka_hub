@@ -1,0 +1,215 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  COSTUMER
+  ACTOR
+}
+
+enum PropStatus {
+  IN_STORAGE
+  ISSUED
+  WRITTEN_OFF
+}
+
+enum IssueStatus {
+  OPEN
+  CLOSED
+}
+
+enum MediaEntityType {
+  CONTAINER
+  PROP
+  ISSUE
+  WRITEOFF
+}
+
+model Org {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users      User[]
+  warehouses Warehouse[]
+  containers Container[]
+  props      Prop[]
+
+  issues    Issue[]
+  writeOffs WriteOff[]
+  media     Media[]
+  auditLogs AuditLog[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  orgId     String
+  email     String
+  name      String
+  role      UserRole
+  createdAt DateTime @default(now())
+
+  org Org @relation(fields: [orgId], references: [id])
+
+  writeOffs WriteOff[] @relation("WriteOffBy")
+
+  issuedBy    Issue[] @relation("IssuedBy")
+  actorIssues Issue[] @relation("ActorIssues")
+  returnedBy  Issue[] @relation("ReturnedBy")
+
+  createdProps Prop[]     @relation("CreatedProps")
+  auditLogs    AuditLog[]
+  medias       Media[]
+
+  @@unique([orgId, email])
+  @@index([orgId, role])
+}
+
+model Warehouse {
+  id        String   @id @default(cuid())
+  orgId     String
+  name      String
+  address   String?
+  comment   String?
+  createdAt DateTime @default(now())
+
+  org Org @relation(fields: [orgId], references: [id])
+
+  containers Container[]
+
+  @@index([orgId])
+}
+
+model Container {
+  id          String   @id @default(cuid())
+  orgId       String
+  warehouseId String
+  parentId    String?
+  name        String
+  qrCode      String
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  org       Org       @relation(fields: [orgId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+
+  parent   Container?  @relation("ContainerTree", fields: [parentId], references: [id])
+  children Container[] @relation("ContainerTree")
+
+  props Prop[]
+
+  @@unique([orgId, qrCode])
+  @@index([orgId, warehouseId])
+  @@index([parentId])
+}
+
+model Prop {
+  id                 String     @id @default(cuid())
+  orgId              String
+  name               String
+  description        String?
+  inventoryNumber    String?
+  status             PropStatus @default(IN_STORAGE)
+  currentContainerId String?
+  createdAt          DateTime   @default(now())
+  createdByUserId    String
+
+  org Org @relation(fields: [orgId], references: [id])
+
+  currentContainer Container? @relation(fields: [currentContainerId], references: [id])
+  createdBy        User       @relation("CreatedProps", fields: [createdByUserId], references: [id])
+
+  issues   Issue[]
+  writeOff WriteOff?
+
+  @@index([orgId, status])
+  @@index([currentContainerId])
+}
+
+model Issue {
+  id               String      @id @default(cuid())
+  orgId            String
+  propId           String
+  actorUserId      String
+  issuedAt         DateTime    @default(now())
+  issuedByUserId   String
+  returnPlannedAt  DateTime?
+  returnedAt       DateTime?
+  returnedByUserId String?
+  status           IssueStatus @default(OPEN)
+  comment          String?
+
+  org  Org  @relation(fields: [orgId], references: [id])
+  prop Prop @relation(fields: [propId], references: [id])
+
+  actor      User  @relation("ActorIssues", fields: [actorUserId], references: [id])
+  issuedBy   User  @relation("IssuedBy", fields: [issuedByUserId], references: [id])
+  returnedBy User? @relation("ReturnedBy", fields: [returnedByUserId], references: [id])
+
+  @@index([orgId, status])
+  @@index([propId, status])
+  @@index([actorUserId, status])
+}
+
+model WriteOff {
+  id                 String   @id @default(cuid())
+  orgId              String
+  propId             String   @unique
+  writtenOffAt       DateTime @default(now())
+  writtenOffByUserId String
+  reason             String?
+  comment            String?
+
+  org          Org  @relation(fields: [orgId], references: [id])
+  prop         Prop @relation(fields: [propId], references: [id])
+  writtenOffBy User @relation("WriteOffBy", fields: [writtenOffByUserId], references: [id])
+
+  @@index([orgId])
+}
+
+model Media {
+  id              String          @id @default(cuid())
+  orgId           String
+  entityType      MediaEntityType
+  entityId        String
+  url             String
+  caption         String?
+  createdAt       DateTime        @default(now())
+  createdByUserId String?
+
+  org Org @relation(fields: [orgId], references: [id])
+
+  // Для MVP — без строгих foreign keys на entityId (полиморфная связь).
+  // Привязки делаем на уровне логики API.
+  createdBy User? @relation(fields: [createdByUserId], references: [id])
+
+  @@index([orgId, entityType, entityId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  orgId       String
+  actorUserId String
+  action      String
+  entityType  String
+  entityId    String
+  meta        Json?
+  createdAt   DateTime @default(now())
+
+  org   Org  @relation(fields: [orgId], references: [id])
+  actor User @relation(fields: [actorUserId], references: [id])
+
+  @@index([orgId, createdAt])
+  @@index([orgId, entityType, entityId])
+}
