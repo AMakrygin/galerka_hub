@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import BurgerMenu from "@/components/BurgerMenu";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,6 +23,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <BurgerMenu />
         {children}
       </body>
     </html>

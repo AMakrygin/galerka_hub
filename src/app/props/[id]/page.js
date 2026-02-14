@@ -39,11 +39,15 @@ export default async function PropPage({ params }) {
         </div>
       )}
 
-      {/* Форма выдачи */}
-      <IssueForm propId={prop.id} disabled={prop.status !== "IN_STORAGE"} />
+
+     
 
       {prop.status === "ISSUED" && (
   <ReturnForm propId={prop.id} />
+)}
+
+      {prop.status !== "ISSUED" && (
+   <IssueForm propId={prop.id} disabled={prop.status !== "IN_STORAGE"} />
 )}
 
       <h2 style={{ marginTop: 24 }}>История выдач</h2>
