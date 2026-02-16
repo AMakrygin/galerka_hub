@@ -27,7 +27,7 @@ export default async function PropsPage({ searchParams }) {
                         border: "1px solid #ddd",
                         borderRadius: 10,
                         textDecoration: "none",
-                        color: "black",
+                        color: "black", 
                         background: "#fafafa",
                     }}
                 >
