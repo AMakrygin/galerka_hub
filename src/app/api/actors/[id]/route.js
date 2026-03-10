@@ -1,43 +1,46 @@
 import { prisma } from "@/lib/prisma";
+import { fail, getOrgId, ok } from "@/lib/api";
 
 export async function GET(req, { params }) {
-  const orgId = "org_demo";
-  const { id } = await params; // Next 16: params = Promise
+  const orgId = getOrgId();
+  const { id } = await params;
 
-  const actor = await prisma.user.findFirst({
-    where: { id, orgId, role: "ACTOR" },
-    select: { id: true, name: true, email: true, createdAt: true },
-  });
+  try {
+    const actor = await prisma.user.findFirst({
+      where: { id, orgId, role: "ACTOR" },
+      select: { id: true, name: true, email: true, createdAt: true },
+    });
 
-  if (!actor) {
-    return Response.json({ error: "Actor not found" }, { status: 404 });
-  }
+    if (!actor) {
+      return fail("actor not found", 404);
+    }
 
-  // Что сейчас на руках: открытые выдачи
-  const openIssues = await prisma.issue.findMany({
-    where: { orgId, actorUserId: id, status: "OPEN" },
-    orderBy: { issuedAt: "desc" },
-    include: {
-      prop: {
-        include: {
-          currentContainer: { include: { warehouse: true } }, // обычно null у ISSUED, но пусть будет
+    const openIssues = await prisma.issue.findMany({
+      where: { orgId, actorUserId: id, status: "OPEN" },
+      orderBy: { issuedAt: "desc" },
+      include: {
+        prop: {
+          include: {
+            currentContainer: { include: { warehouse: true } },
+          },
         },
+        issuedBy: { select: { id: true, name: true, email: true } },
       },
-      issuedBy: { select: { id: true, name: true, email: true } },
-    },
-  });
+    });
 
-  // История: последние 50 выдач/возвратов
-  const history = await prisma.issue.findMany({
-    where: { orgId, actorUserId: id },
-    orderBy: { issuedAt: "desc" },
-    take: 50,
-    include: {
-      prop: true,
-      issuedBy: { select: { id: true, name: true, email: true } },
-      returnedBy: { select: { id: true, name: true, email: true } },
-    },
-  });
+    const history = await prisma.issue.findMany({
+      where: { orgId, actorUserId: id },
+      orderBy: { issuedAt: "desc" },
+      take: 50,
+      include: {
+        prop: true,
+        issuedBy: { select: { id: true, name: true, email: true } },
+        returnedBy: { select: { id: true, name: true, email: true } },
+      },
+    });
 
-  return Response.json({ actor, openIssues, history });
+    return ok({ actor, openIssues, history });
+  } catch {
+    return fail("failed to fetch actor", 500);
+  }
 }

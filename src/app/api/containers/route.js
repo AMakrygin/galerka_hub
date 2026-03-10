@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { fail, getOrgId, ok, parseJsonSafe } from "@/lib/api";
 
 function genQrCode() {
   // Короткий уникальный код, удобный для печати: C-<random>
@@ -8,36 +9,40 @@ function genQrCode() {
 }
 
 export async function GET() {
-  const orgId = "org_demo";
-  const containers = await prisma.container.findMany({
-    where: { orgId },
-    include: { warehouse: true, parent: true },
-    orderBy: { createdAt: "desc" },
-  });
-  return Response.json({ containers });
+  const orgId = getOrgId();
+
+  try {
+    const containers = await prisma.container.findMany({
+      where: { orgId },
+      include: { warehouse: true, parent: true },
+      orderBy: { createdAt: "desc" },
+    });
+    return ok({ containers });
+  } catch {
+    return fail("failed to fetch containers", 500);
+  }
 }
 
 export async function POST(req) {
-  const orgId = "org_demo";
-  const body = await req.json();
+  const orgId = getOrgId();
+  const body = await parseJsonSafe(req);
+  if (!body) return fail("invalid json body", 400);
+
   const { warehouseId, parentId, name, qrCode, comment } = body;
 
-  if (!warehouseId) return Response.json({ error: "warehouseId required" }, { status: 400 });
-  if (!name?.trim()) return Response.json({ error: "name required" }, { status: 400 });
+  if (!warehouseId) return fail("warehouseId required", 400);
+  if (!name?.trim()) return fail("name required", 400);
 
   const wh = await prisma.warehouse.findFirst({ where: { id: warehouseId, orgId } });
-  if (!wh) return Response.json({ error: "warehouse not found" }, { status: 404 });
+  if (!wh) return fail("warehouse not found", 404);
 
   if (parentId) {
     const parent = await prisma.container.findFirst({ where: { id: parentId, orgId } });
-    if (!parent) return Response.json({ error: "parent container not found" }, { status: 404 });
+    if (!parent) return fail("parent container not found", 404);
   }
 
-  // ✅ QR теперь не обязателен: если пустой — генерим
   let finalQr = (qrCode || "").trim();
 
-  // На всякий случай защищаемся от коллизий (у нас @@unique([orgId, qrCode]))
-  // Пробуем до 10 раз сгенерировать уникальный.
   for (let attempt = 0; attempt < 10; attempt++) {
     if (!finalQr) finalQr = genQrCode();
 
@@ -53,15 +58,11 @@ export async function POST(req) {
         },
       });
 
-      return Response.json({ container });
-    } catch (e) {
-      // вероятнее всего конфликт уникальности qrCode — пробуем сгенерить новый
+      return ok({ container }, 201);
+    } catch {
       finalQr = "";
     }
   }
 
-  return Response.json(
-    { error: "cannot create container: failed to generate unique qrCode" },
-    { status: 500 }
-  );
+  return fail("cannot create container: failed to generate unique qrCode", 500);
 }

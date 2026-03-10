@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/prisma";
+import { fail, ok } from "@/lib/api";
 
 export async function GET() {
-  const result = await prisma.org.count();
-  return Response.json({ ok: true, orgCount: result });
+  try {
+    const result = await prisma.org.count();
+    return ok({ orgCount: result });
+  } catch {
+    return fail("database unavailable", 500);
+  }
 }

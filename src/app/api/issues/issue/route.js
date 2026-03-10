@@ -1,30 +1,32 @@
 import { prisma } from "@/lib/prisma";
+import { fail, getOrgId, ok, parseJsonSafe } from "@/lib/api";
 
 export async function POST(req) {
-  const orgId = "org_demo";
+  const orgId = getOrgId();
 
-  const body = await req.json();
+  const body = await parseJsonSafe(req);
+  if (!body) return fail("invalid json body", 400);
+
   const { propId, actorUserId, comment } = body;
 
   if (!propId || !actorUserId) {
-    return Response.json({ error: "propId and actorUserId required" }, { status: 400 });
+    return fail("propId and actorUserId required", 400);
   }
 
   const prop = await prisma.prop.findFirst({ where: { id: propId, orgId } });
-  if (!prop) return Response.json({ error: "Prop not found" }, { status: 404 });
-  if (prop.status === "WRITTEN_OFF") return Response.json({ error: "Prop written off" }, { status: 400 });
+  if (!prop) return fail("prop not found", 404);
+  if (prop.status === "WRITTEN_OFF") return fail("prop written off", 400);
 
   const open = await prisma.issue.findFirst({
     where: { orgId, propId, status: "OPEN" },
   });
-  if (open) return Response.json({ error: "Already issued" }, { status: 400 });
+  if (open) return fail("already issued", 400);
 
-  // MVP: кто выдал = админ (из seed)
   const issuedBy = await prisma.user.findFirst({
     where: { orgId, email: "admin@demo.local" },
     select: { id: true },
   });
-  if (!issuedBy) return Response.json({ error: "issuedBy user not found" }, { status: 500 });
+  if (!issuedBy) return fail("issuedBy user not found", 500);
 
   const issue = await prisma.$transaction(async (tx) => {
     const created = await tx.issue.create({
@@ -57,5 +59,5 @@ export async function POST(req) {
     return created;
   });
 
-  return Response.json({ issue });
+  return ok({ issue }, 201);
 }

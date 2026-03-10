@@ -1,13 +1,15 @@
 import { prisma } from "@/lib/prisma";
+import { fail, getOrgId, ok, parseJsonSafe } from "@/lib/api";
 
 export async function POST(req) {
-  const orgId = "org_demo";
-  const body = await req.json();
+  const orgId = getOrgId();
+  const body = await parseJsonSafe(req);
+  if (!body) return fail("invalid json body", 400);
 
   const { propId, containerId } = body;
 
   if (!propId || !containerId) {
-    return Response.json({ error: "propId and containerId required" }, { status: 400 });
+    return fail("propId and containerId required", 400);
   }
 
   const openIssue = await prisma.issue.findFirst({
@@ -15,8 +17,14 @@ export async function POST(req) {
   });
 
   if (!openIssue) {
-    return Response.json({ error: "No open issue found" }, { status: 400 });
+    return fail("no open issue found", 400);
   }
+
+  const container = await prisma.container.findFirst({
+    where: { id: containerId, orgId },
+    select: { id: true },
+  });
+  if (!container) return fail("container not found", 404);
 
   const result = await prisma.$transaction(async (tx) => {
     await tx.issue.update({
@@ -38,5 +46,5 @@ export async function POST(req) {
     return true;
   });
 
-  return Response.json({ ok: result });
+  return ok({ returned: result });
 }

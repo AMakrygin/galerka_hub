@@ -1,39 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# galerka_hub (backend-only)
 
-## Getting Started
+Сервис переведен в режим API-only для внешнего frontend-приложения.
 
-First, run the development server:
+## Быстрый старт
+
+1. Установить зависимости:
+
+```bash
+npm install
+```
+
+2. Создать `.env` на основе `.env.example`:
+
+```env
+DATABASE_URL="postgresql://appuser:<PASSWORD>@127.0.0.1:5433/appdb?schema=public"
+ORG_ID="org_demo"
+FRONTEND_ORIGIN="http://localhost:5173"
+```
+
+3. Применить миграции и сид:
+
+```bash
+npx prisma migrate deploy
+node prisma/seed.js
+```
+
+4. Запустить API:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+API будет доступен по `http://localhost:3000/api/*`.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## CORS
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- CORS включен для всех маршрутов `/api/*` через `middleware.js`.
+- Preflight `OPTIONS` обрабатывается автоматически.
+- Разрешенный origin задается через `FRONTEND_ORIGIN`.
 
-## Learn More
+## Формат ответов
 
-To learn more about Next.js, take a look at the following resources:
+Успех:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```json
+{
+	"ok": true,
+	"data": { }
+}
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Ошибка:
 
-## Deploy on Vercel
+```json
+{
+	"ok": false,
+	"error": {
+		"message": "..."
+	}
+}
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Основные эндпоинты
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `GET /api/health/db`
+- `GET /api/actors`
+- `POST /api/actors`
+- `GET /api/actors/:id`
+- `GET /api/warehouses`
+- `POST /api/warehouses`
+- `GET /api/containers`
+- `POST /api/containers`
+- `GET /api/props`
+- `POST /api/props/create`
+- `GET /api/props/:id`
+- `GET /api/qr/:code`
+- `POST /api/issues/issue`
+- `POST /api/issues/return`
 
+## Примечания
 
-DATABASE_URL="postgresql://appuser:-----------<PASSWORD_OF_RITA>@127.0.0.1:5433/appdb?schema=public"
+- Frontend-страницы и компоненты удалены из проекта.
+- Внешний frontend должен работать только через HTTP API.

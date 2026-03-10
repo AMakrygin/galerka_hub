@@ -1,21 +1,29 @@
 import { prisma } from "@/lib/prisma";
+import { fail, getOrgId, ok, parseJsonSafe } from "@/lib/api";
 
 export async function GET() {
-  const orgId = "org_demo";
-  const warehouses = await prisma.warehouse.findMany({
-    where: { orgId },
-    orderBy: { createdAt: "desc" },
-  });
-  return Response.json({ warehouses });
+  const orgId = getOrgId();
+
+  try {
+    const warehouses = await prisma.warehouse.findMany({
+      where: { orgId },
+      orderBy: { createdAt: "desc" },
+    });
+    return ok({ warehouses });
+  } catch {
+    return fail("failed to fetch warehouses", 500);
+  }
 }
 
 export async function POST(req) {
-  const orgId = "org_demo";
-  const body = await req.json();
+  const orgId = getOrgId();
+  const body = await parseJsonSafe(req);
+  if (!body) return fail("invalid json body", 400);
+
   const { name, address, comment } = body;
 
   if (!name?.trim()) {
-    return Response.json({ error: "name required" }, { status: 400 });
+    return fail("name required", 400);
   }
 
   const warehouse = await prisma.warehouse.create({
@@ -27,5 +35,5 @@ export async function POST(req) {
     },
   });
 
-  return Response.json({ warehouse });
+  return ok({ warehouse }, 201);
 }
