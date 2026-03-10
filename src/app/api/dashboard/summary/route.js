@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { getOrgId, ok } from "@/lib/api";
 
-export async function GET() {
-  const orgId = getOrgId();
+export async function GET(req) {
+  const orgId = getOrgId(req);
 
   const [totalProps, inUse, available, missing, damaged, writeOffsThisMonth] = await Promise.all([
     prisma.prop.count({ where: { orgId } }),

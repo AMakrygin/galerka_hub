@@ -2,8 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { fail, getOrgId, ok, parseJsonSafe } from "@/lib/api";
 import { mapActor } from "@/lib/contracts";
 
-export async function GET() {
-  const orgId = getOrgId();
+export async function GET(req) {
+  const orgId = getOrgId(req);
 
   try {
     const actors = await prisma.user.findMany({
@@ -27,7 +27,7 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  const orgId = getOrgId();
+  const orgId = getOrgId(req);
   const body = await parseJsonSafe(req);
   if (!body) return fail("invalid json body", 400);
 

@@ -1,7 +1,14 @@
 const DEFAULT_ORG_ID = "org_demo";
 
-export function getOrgId() {
-  return (process.env.ORG_ID || DEFAULT_ORG_ID).trim();
+export function getOrgId(req) {
+  const headerOrgId =
+    req?.headers?.get?.("x-org-id") ||
+    req?.headers?.get?.("x-org_id") ||
+    req?.headers?.get?.("x-orgid") ||
+    req?.headers?.get?.("org-id") ||
+    req?.headers?.get?.("org_id");
+
+  return (headerOrgId || process.env.ORG_ID || DEFAULT_ORG_ID).trim();
 }
 
 export function getFrontendOrigin() {

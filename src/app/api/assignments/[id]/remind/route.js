@@ -4,7 +4,7 @@ import { getSystemUser } from "@/lib/services/context";
 import { logActivity } from "@/lib/services/activity";
 
 export async function POST(_req, { params }) {
-  const orgId = getOrgId();
+  const orgId = getOrgId(_req);
   const { id } = await params;
 
   const assignment = await prisma.issue.findFirst({

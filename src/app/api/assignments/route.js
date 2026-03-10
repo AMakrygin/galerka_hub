@@ -5,7 +5,7 @@ import { getSystemUser } from "@/lib/services/context";
 import { logActivity } from "@/lib/services/activity";
 
 export async function GET(req) {
-  const orgId = getOrgId();
+  const orgId = getOrgId(req);
   const url = new URL(req.url);
   const status = (url.searchParams.get("status") || "").trim();
 
@@ -27,7 +27,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const orgId = getOrgId();
+  const orgId = getOrgId(req);
   const body = await parseJsonSafe(req);
   if (!body) return fail("invalid json body", 400);
 

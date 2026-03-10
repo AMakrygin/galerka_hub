@@ -3,7 +3,7 @@ import { getOrgId, ok } from "@/lib/api";
 import { mapActivity } from "@/lib/contracts";
 
 export async function GET(req) {
-  const orgId = getOrgId();
+  const orgId = getOrgId(req);
   const url = new URL(req.url);
   const limit = Number(url.searchParams.get("limit") || 50);
 

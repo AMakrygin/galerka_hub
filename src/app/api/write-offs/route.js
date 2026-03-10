@@ -4,8 +4,8 @@ import { mapWriteOff } from "@/lib/contracts";
 import { getSystemUser } from "@/lib/services/context";
 import { logActivity } from "@/lib/services/activity";
 
-export async function GET() {
-  const orgId = getOrgId();
+export async function GET(req) {
+  const orgId = getOrgId(req);
 
   const writeOffs = await prisma.writeOff.findMany({
     where: { orgId },
@@ -20,7 +20,7 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  const orgId = getOrgId();
+  const orgId = getOrgId(req);
   const body = await parseJsonSafe(req);
   if (!body) return fail("invalid json body", 400);
 

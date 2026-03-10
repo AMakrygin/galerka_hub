@@ -5,6 +5,18 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Local API checks for Galerka Hub backend"
   },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const orgId = pm.environment.get('org_id') || pm.environment.get('orgId');",
+          "if (orgId) { pm.request.headers.upsert({ key: 'x-org-id', value: orgId }); }"
+        ]
+      }
+    }
+  ],
   "item": [
     {
       "name": "00 Health DB",

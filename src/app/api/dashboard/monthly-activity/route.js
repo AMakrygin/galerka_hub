@@ -27,8 +27,8 @@ function getMonthBuckets() {
   return buckets;
 }
 
-export async function GET() {
-  const orgId = getOrgId();
+export async function GET(req) {
+  const orgId = getOrgId(req);
   const buckets = getMonthBuckets();
 
   for (const bucket of buckets) {

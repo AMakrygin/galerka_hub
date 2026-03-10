@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
+    "seed": "node prisma/seed.js --reset-generated --orgs=2 --seed=20260310",
+    "seed:cleanup": "node prisma/seed.js --cleanup-only --reset-generated",
+    "seed:regen": "node prisma/seed.js --reset-generated --orgs=2 --seed=20260310",
     "smoke:api": "powershell -ExecutionPolicy Bypass -File ./scripts/smoke-api.ps1",
     "check:tunnel": "powershell -ExecutionPolicy Bypass -File ./scripts/tunnel-check.ps1"
   },

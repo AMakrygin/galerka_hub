@@ -5,7 +5,7 @@ import { getSystemUser } from "@/lib/services/context";
 import { logActivity } from "@/lib/services/activity";
 
 export async function POST(req, { params }) {
-  const orgId = getOrgId();
+  const orgId = getOrgId(req);
   const { id } = await params;
   const body = await parseJsonSafe(req);
 

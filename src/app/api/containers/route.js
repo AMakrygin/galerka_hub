@@ -9,8 +9,8 @@ function genQrCode() {
   return `C-${rnd}`;
 }
 
-export async function GET() {
-  const orgId = getOrgId();
+export async function GET(req) {
+  const orgId = getOrgId(req);
 
   try {
     const containers = await prisma.container.findMany({
@@ -25,7 +25,7 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  const orgId = getOrgId();
+  const orgId = getOrgId(req);
   const body = await parseJsonSafe(req);
   if (!body) return fail("invalid json body", 400);
 

@@ -5,7 +5,7 @@ import { getSystemUser } from "@/lib/services/context";
 import { logActivity } from "@/lib/services/activity";
 
 export async function GET(req, { params }) {
-  const orgId = getOrgId();
+  const orgId = getOrgId(req);
   const { id } = await params;
 
   try {
@@ -29,7 +29,7 @@ export async function GET(req, { params }) {
 }
 
 export async function PATCH(req, { params }) {
-  const orgId = getOrgId();
+  const orgId = getOrgId(req);
   const { id } = await params;
   const body = await parseJsonSafe(req);
   if (!body) return fail("invalid json body", 400);
@@ -104,7 +104,7 @@ export async function PATCH(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
-  const orgId = getOrgId();
+  const orgId = getOrgId(req);
   const { id } = await params;
 
   const prop = await prisma.prop.findFirst({ where: { id, orgId } });
