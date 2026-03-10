@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { fail, getOrgId, ok, parseJsonSafe } from "@/lib/api";
+import { mapContainer } from "@/lib/contracts";
 
 function genQrCode() {
   // Короткий уникальный код, удобный для печати: C-<random>
@@ -14,10 +15,10 @@ export async function GET() {
   try {
     const containers = await prisma.container.findMany({
       where: { orgId },
-      include: { warehouse: true, parent: true },
+      include: { warehouse: true, parent: true, _count: { select: { props: true } } },
       orderBy: { createdAt: "desc" },
     });
-    return ok({ containers });
+    return ok({ containers: containers.map(mapContainer) });
   } catch {
     return fail("failed to fetch containers", 500);
   }
@@ -28,12 +29,25 @@ export async function POST(req) {
   const body = await parseJsonSafe(req);
   if (!body) return fail("invalid json body", 400);
 
-  const { warehouseId, parentId, name, qrCode, comment } = body;
+  const { warehouseId, parentId, name, qrCode, comment, location, type, capacity } = body;
 
-  if (!warehouseId) return fail("warehouseId required", 400);
   if (!name?.trim()) return fail("name required", 400);
 
-  const wh = await prisma.warehouse.findFirst({ where: { id: warehouseId, orgId } });
+  let resolvedWarehouseId = warehouseId;
+
+  if (!resolvedWarehouseId && parentId) {
+    const parent = await prisma.container.findFirst({ where: { id: parentId, orgId } });
+    if (!parent) return fail("parent container not found", 404);
+    resolvedWarehouseId = parent.warehouseId;
+  }
+
+  if (!resolvedWarehouseId) {
+    const existingWarehouse = await prisma.warehouse.findFirst({ where: { orgId }, select: { id: true } });
+    if (!existingWarehouse) return fail("warehouseId required", 400);
+    resolvedWarehouseId = existingWarehouse.id;
+  }
+
+  const wh = await prisma.warehouse.findFirst({ where: { id: resolvedWarehouseId, orgId } });
   if (!wh) return fail("warehouse not found", 404);
 
   if (parentId) {
@@ -50,15 +64,23 @@ export async function POST(req) {
       const container = await prisma.container.create({
         data: {
           orgId,
-          warehouseId,
+          warehouseId: resolvedWarehouseId,
           parentId: parentId || null,
           name: name.trim(),
+          location: location?.trim() || null,
+          type: type ? String(type).toUpperCase() : "CONTAINER",
+          capacity: Number.isFinite(Number(capacity)) ? Number(capacity) : null,
           qrCode: finalQr,
           comment: comment?.trim() || null,
         },
+        include: {
+          warehouse: true,
+          parent: true,
+          _count: { select: { props: true } },
+        },
       });
 
-      return ok({ container }, 201);
+      return ok({ container: mapContainer(container) }, 201);
     } catch {
       finalQr = "";
     }

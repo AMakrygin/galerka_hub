@@ -1,1 +1,1 @@
-ssh -N -L 5433:127.0.0.1:5432 root@77.105.141.60
+ssh -N -L 5433:127.0.0.1:5432 -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 galerka-db

@@ -21,7 +21,16 @@ enum UserRole {
 enum PropStatus {
   IN_STORAGE
   ISSUED
+  DAMAGED
+  MISSING
   WRITTEN_OFF
+}
+
+enum ContainerType {
+  WAREHOUSE
+  ROOM
+  SHELF
+  CONTAINER
 }
 
 enum IssueStatus {
@@ -58,6 +67,10 @@ model User {
   email     String
   name      String
   role      UserRole
+  title     String?
+  phone     String?
+  photoUrl  String?
+  performances String[] @default([])
   createdAt DateTime @default(now())
 
   org Org @relation(fields: [orgId], references: [id])
@@ -97,6 +110,9 @@ model Container {
   warehouseId String
   parentId    String?
   name        String
+  location    String?
+  type        ContainerType @default(CONTAINER)
+  capacity    Int?
   qrCode      String
   comment     String?
   createdAt   DateTime @default(now())
@@ -118,6 +134,9 @@ model Prop {
   id                 String     @id @default(cuid())
   orgId              String
   name               String
+  category           String?
+  photoUrl           String?
+  qrCode             String?
   description        String?
   inventoryNumber    String?
   status             PropStatus @default(IN_STORAGE)
@@ -135,6 +154,7 @@ model Prop {
 
   @@index([orgId, status])
   @@index([currentContainerId])
+  @@unique([orgId, qrCode])
 }
 
 model Issue {
@@ -149,6 +169,9 @@ model Issue {
   returnedByUserId String?
   status           IssueStatus @default(OPEN)
   comment          String?
+  performance      String?
+  expectedReturnAt DateTime?
+  remindedAt       DateTime?
 
   org  Org  @relation(fields: [orgId], references: [id])
   prop Prop @relation(fields: [propId], references: [id])
@@ -170,6 +193,8 @@ model WriteOff {
   writtenOffByUserId String
   reason             String?
   comment            String?
+  photoUrl           String?
+  approvedByName     String?
 
   org          Org  @relation(fields: [orgId], references: [id])
   prop         Prop @relation(fields: [propId], references: [id])

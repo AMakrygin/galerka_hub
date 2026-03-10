@@ -1,0 +1,40 @@
+-- AlterEnum
+ALTER TYPE "PropStatus" ADD VALUE IF NOT EXISTS 'DAMAGED';
+ALTER TYPE "PropStatus" ADD VALUE IF NOT EXISTS 'MISSING';
+
+-- CreateEnum
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ContainerType') THEN
+    CREATE TYPE "ContainerType" AS ENUM ('WAREHOUSE', 'ROOM', 'SHELF', 'CONTAINER');
+  END IF;
+END
+$$;
+
+-- AlterTable User
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "title" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "phone" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "photoUrl" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "performances" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];
+
+-- AlterTable Container
+ALTER TABLE "Container" ADD COLUMN IF NOT EXISTS "location" TEXT;
+ALTER TABLE "Container" ADD COLUMN IF NOT EXISTS "type" "ContainerType" NOT NULL DEFAULT 'CONTAINER';
+ALTER TABLE "Container" ADD COLUMN IF NOT EXISTS "capacity" INTEGER;
+
+-- AlterTable Prop
+ALTER TABLE "Prop" ADD COLUMN IF NOT EXISTS "category" TEXT;
+ALTER TABLE "Prop" ADD COLUMN IF NOT EXISTS "photoUrl" TEXT;
+ALTER TABLE "Prop" ADD COLUMN IF NOT EXISTS "qrCode" TEXT;
+
+-- AlterTable Issue
+ALTER TABLE "Issue" ADD COLUMN IF NOT EXISTS "performance" TEXT;
+ALTER TABLE "Issue" ADD COLUMN IF NOT EXISTS "expectedReturnAt" TIMESTAMP(3);
+ALTER TABLE "Issue" ADD COLUMN IF NOT EXISTS "remindedAt" TIMESTAMP(3);
+
+-- AlterTable WriteOff
+ALTER TABLE "WriteOff" ADD COLUMN IF NOT EXISTS "photoUrl" TEXT;
+ALTER TABLE "WriteOff" ADD COLUMN IF NOT EXISTS "approvedByName" TEXT;
+
+-- CreateIndex
+CREATE UNIQUE INDEX IF NOT EXISTS "Prop_orgId_qrCode_key" ON "Prop"("orgId", "qrCode");

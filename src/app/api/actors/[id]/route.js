@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { fail, getOrgId, ok } from "@/lib/api";
+import { mapActor, mapAssignment } from "@/lib/contracts";
 
 export async function GET(req, { params }) {
   const orgId = getOrgId();
@@ -8,7 +9,15 @@ export async function GET(req, { params }) {
   try {
     const actor = await prisma.user.findFirst({
       where: { id, orgId, role: "ACTOR" },
-      select: { id: true, name: true, email: true, createdAt: true },
+      include: {
+        _count: {
+          select: {
+            actorIssues: {
+              where: { status: "OPEN" },
+            },
+          },
+        },
+      },
     });
 
     if (!actor) {
@@ -19,12 +28,8 @@ export async function GET(req, { params }) {
       where: { orgId, actorUserId: id, status: "OPEN" },
       orderBy: { issuedAt: "desc" },
       include: {
-        prop: {
-          include: {
-            currentContainer: { include: { warehouse: true } },
-          },
-        },
-        issuedBy: { select: { id: true, name: true, email: true } },
+        prop: true,
+        actor: true,
       },
     });
 
@@ -34,12 +39,15 @@ export async function GET(req, { params }) {
       take: 50,
       include: {
         prop: true,
-        issuedBy: { select: { id: true, name: true, email: true } },
-        returnedBy: { select: { id: true, name: true, email: true } },
+        actor: true,
       },
     });
 
-    return ok({ actor, openIssues, history });
+    return ok({
+      actor: mapActor(actor),
+      openAssignments: openIssues.map(mapAssignment),
+      history: history.map(mapAssignment),
+    });
   } catch {
     return fail("failed to fetch actor", 500);
   }

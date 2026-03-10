@@ -1,0 +1,232 @@
+{
+  "info": {
+    "_postman_id": "f2b7c2be-9c5d-45d9-94cf-c8fc0bf0b001",
+    "name": "Galerka Hub API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Local API checks for Galerka Hub backend"
+  },
+  "item": [
+    {
+      "name": "00 Health DB",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/health/db"
+      }
+    },
+    {
+      "name": "01 Get Containers",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const first = json?.data?.containers?.[0];",
+              "if (first?.id) pm.environment.set('containerId', first.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/containers"
+      }
+    },
+    {
+      "name": "02 Get Actors",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const first = json?.data?.actors?.[0];",
+              "if (first?.id) pm.environment.set('actorId', first.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/actors"
+      }
+    },
+    {
+      "name": "03 Create Prop",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.environment.set('stamp', Date.now().toString());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('201', function () { pm.response.to.have.status(201); });",
+              "const json = pm.response.json();",
+              "const id = json?.data?.prop?.id;",
+              "if (id) pm.environment.set('propId', id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Postman Prop {{stamp}}\",\n  \"category\": \"Тест\",\n  \"description\": \"created from postman\",\n  \"containerId\": \"{{containerId}}\",\n  \"qrCode\": \"PM-{{stamp}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/props"
+      }
+    },
+    {
+      "name": "04 Patch Prop",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"damaged\",\n  \"description\": \"patched from postman\"\n}"
+        },
+        "url": "{{baseUrl}}/api/props/{{propId}}"
+      }
+    },
+    {
+      "name": "05 Create Assignment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('201', function () { pm.response.to.have.status(201); });",
+              "const json = pm.response.json();",
+              "const id = json?.data?.assignment?.id;",
+              "if (id) pm.environment.set('assignmentId', id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"propId\": \"{{propId}}\",\n  \"actorId\": \"{{actorId}}\",\n  \"performance\": \"Постман тест\",\n  \"expectedReturn\": \"2026-03-20\"\n}"
+        },
+        "url": "{{baseUrl}}/api/assignments"
+      }
+    },
+    {
+      "name": "06 Remind Assignment",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/api/assignments/{{assignmentId}}/remind"
+      }
+    },
+    {
+      "name": "07 Return Assignment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"containerId\": \"{{containerId}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/assignments/{{assignmentId}}/return"
+      }
+    },
+    {
+      "name": "08 Write-off (optional)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"propId\": \"{{propId}}\",\n  \"reason\": \"Postman test write-off\",\n  \"approvedBy\": \"Postman\"\n}"
+        },
+        "url": "{{baseUrl}}/api/write-offs"
+      }
+    },
+    {
+      "name": "09 Activities",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/activities?limit=20"
+      }
+    },
+    {
+      "name": "10 Dashboard Summary",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/dashboard/summary"
+      }
+    },
+    {
+      "name": "11 Dashboard Prop Usage",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/dashboard/prop-usage"
+      }
+    },
+    {
+      "name": "12 Dashboard Utilization",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/dashboard/utilization"
+      }
+    },
+    {
+      "name": "13 Dashboard Monthly Activity",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/dashboard/monthly-activity"
+      }
+    }
+  ]
+}
